@@ -1,5 +1,6 @@
 package shop.mtcoding.junitbank.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import shop.mtcoding.junitbank.domain.user.UserEnum;
+import shop.mtcoding.junitbank.dto.ResponseDto;
+import shop.mtcoding.junitbank.util.CustomResponseUtil;
 
 
 @Configuration
@@ -45,9 +48,7 @@ public class SecurityConfig {
 
         // Exception 가로채기
         http.exceptionHandling().authenticationEntryPoint((request, response, authException) -> {
-//            response.setContentType("application/json; charset=utf-8");
-            response.setStatus(403);
-            response.getWriter().println("error");
+            CustomResponseUtil.unAuthentication(response, "로그인을 진행해주세요.");
         });
 
         http.authorizeRequests()
