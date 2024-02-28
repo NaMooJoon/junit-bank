@@ -1,20 +1,22 @@
 package shop.mtcoding.junitbank.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import shop.mtcoding.junitbank.config.jwt.JwtAuthenticationFilter;
+import shop.mtcoding.junitbank.config.jwt.JwtAuthorizationFilter;
 import shop.mtcoding.junitbank.domain.user.UserEnum;
-import shop.mtcoding.junitbank.dto.ResponseDto;
 import shop.mtcoding.junitbank.util.CustomResponseUtil;
 
 
@@ -29,6 +31,15 @@ public class SecurityConfig {
     }
 
     // JWT 필터 등록 필요
+    public class CustomSecurityFilterManager extends AbstractHttpConfigurer<CustomSecurityFilterManager, HttpSecurity> {
+        @Override
+        public void configure(HttpSecurity builder) throws Exception {
+            AuthenticationManager authenticationManager = builder.getSharedObject(AuthenticationManager.class);
+            builder.addFilter(new JwtAuthenticationFilter(authenticationManager));
+            builder.addFilter(new JwtAuthorizationFilter(authenticationManager));
+            super.configure(builder);
+        }
+    }
 
     // JWT 서버를 만들 예정, session 사용 안함.
     @Bean
@@ -46,10 +57,18 @@ public class SecurityConfig {
         // httpBasic은 브라우저가 팝업창을 이용해서 사용자를 인증하는 것.
         http.httpBasic().disable();
 
-        // Exception 가로채기
+        // Filter 적용
+        http.apply(new CustomSecurityFilterManager());
+
+        // 인증 실패 Exception 가로채기
         http.exceptionHandling().authenticationEntryPoint((request, response, authException) -> {
-            CustomResponseUtil.unAuthentication(response, "로그인을 진행해주세요.");
+            CustomResponseUtil.fail(response, "로그인을 진행해주세요.", HttpStatus.UNAUTHORIZED);
         });
+
+        // 권한 처리 실패 Exception 가로채기
+        http.exceptionHandling().accessDeniedHandler(((request, response, accessDeniedException) -> {
+            CustomResponseUtil.fail(response, "권한이 없습니다.", HttpStatus.FORBIDDEN);
+        }));
 
         http.authorizeRequests()
                 .requestMatchers("/api/s/**").authenticated()
