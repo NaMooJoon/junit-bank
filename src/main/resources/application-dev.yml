@@ -28,5 +28,5 @@ spring:
 
 logging:
   level:
-    '[shop.mtcoding.junitbank]': DEBUG
-    '[org.hibernate.type]': TRACE
+    org.hibernate.orm.jdbc.bind: TRACE
+    shop.mtcoding.junitbank: DEBUG
