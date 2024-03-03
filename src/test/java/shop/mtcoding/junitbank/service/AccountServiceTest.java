@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +20,7 @@ import shop.mtcoding.junitbank.domain.user.User;
 import shop.mtcoding.junitbank.domain.user.UserRepository;
 import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountSaveReqDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountSaveResDto;
+import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountListResDto;
 
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest extends DummyObject {
@@ -56,5 +58,28 @@ class AccountServiceTest extends DummyObject {
         assertThat(accountSaveResDto.getId()).isEqualTo(1L);
         assertThat(accountSaveResDto.getNumber()).isEqualTo(1111L);
         assertThat(accountSaveResDto.getBalance()).isEqualTo(1000L);
+    }
+
+    @Test
+    void 계좌목록보기_유저별_test() throws Exception {
+        // given
+        Long userId = 1L;
+
+        // stub
+        User testUser = newMockUser(userId, "Joon", "JUNHYUN");
+        Account testAccount1 = newMockAccount(1L, 1111L, 1000L, testUser);
+        Account testAccount2 = newMockAccount(2L, 2222L, 1000L, testUser);
+        when(userRepository.findById(any())).thenReturn(Optional.of(testUser));
+        when(accountRepository.findByUser_id(any())).thenReturn(List.of(testAccount1, testAccount2));
+
+        // when
+        AccountListResDto accountListResDto = accountService.계좌목록보기_유저별(userId);
+        String responseBody = om.writeValueAsString(accountListResDto);
+        System.out.println("responseBody = " + responseBody);
+
+        // then
+        assertThat(accountListResDto.getFullname()).isEqualTo("JUNHYUN");
+        assertThat(accountListResDto.getAccountDtos().size()).isEqualTo(2);
+        assertThat(accountListResDto.getAccountDtos().get(1).getNumber()).isEqualTo(2222L);
     }
 }
