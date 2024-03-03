@@ -1,5 +1,6 @@
 package shop.mtcoding.junitbank.service;
 
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import shop.mtcoding.junitbank.domain.account.AccountRepository;
 import shop.mtcoding.junitbank.domain.user.User;
 import shop.mtcoding.junitbank.domain.user.UserRepository;
 import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountSaveReqDto;
+import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountListResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountSaveResDto;
 import shop.mtcoding.junitbank.handler.ex.CustomApiException;
 
@@ -33,6 +35,14 @@ public class AccountService {
 
         Account accountEntity = accountRepository.save(accountSaveReqDto.toEntity(userEntity));
         return new AccountSaveResDto(accountEntity);
+    }
+
+    public AccountListResDto 계좌목록보기_유저별(Long userId) {
+        User userEntity = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomApiException("유저를 찾을 수 없습니다."));
+        // 유저의 모든 계좌목록
+        List<Account> accountEntityList = accountRepository.findByUser_id(userId);
+        return new AccountListResDto(userEntity, accountEntityList);
     }
 
 }
