@@ -45,4 +45,12 @@ public class AccountService {
         return new AccountListResDto(userEntity, accountEntityList);
     }
 
+    @Transactional
+    public void 계좌삭제(Long number, Long userId) {
+        Account accountEntity = accountRepository.findByNumber(number)
+                .orElseThrow(() -> new CustomApiException("계좌를 찾을 수 없습니다."));
+        accountEntity.checkOwner(userId);
+        accountRepository.deleteById(accountEntity.getId());
+    }
+
 }

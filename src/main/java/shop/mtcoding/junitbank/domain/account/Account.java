@@ -17,6 +17,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import shop.mtcoding.junitbank.domain.user.User;
+import shop.mtcoding.junitbank.handler.ex.CustomApiException;
 
 @Getter
 @NoArgsConstructor // 스프링이 User 객체 생성을 할 때 빈 생성자로 new를 하기 때문.
@@ -56,5 +57,11 @@ public class Account {
         this.user = user;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public void checkOwner(Long userId) {
+        if (this.user.getId() != userId) {
+            throw new CustomApiException("계좌 소유자가 아닙니다.");
+        }
     }
 }
