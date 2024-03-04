@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +22,7 @@ import shop.mtcoding.junitbank.domain.user.UserRepository;
 import shop.mtcoding.junitbank.dto.user.UserRequestDto.JoinRequestDto;
 
 @ActiveProfiles("test")
-@Transactional
+@Sql("classpath:db/teardown.sql")
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 class UserControllerTest extends DummyObject {
@@ -31,6 +33,8 @@ class UserControllerTest extends DummyObject {
     private ObjectMapper om;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private EntityManager em;
 
     @BeforeEach
     public void setUp() {
@@ -79,5 +83,6 @@ class UserControllerTest extends DummyObject {
 
     private void dataSetting() {
         userRepository.save(newUser("ssar", "쌀"));
+        em.clear();
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,8 @@ import shop.mtcoding.junitbank.config.dummy.DummyObject;
 import shop.mtcoding.junitbank.domain.user.UserRepository;
 import shop.mtcoding.junitbank.dto.user.UserRequestDto.LoginRequestDto;
 
-@Transactional // 테스트가 하나 끝나면 rollback 이 된다.
+//@Transactional // 테스트가 하나 끝나면 rollback 이 된다.
+@Sql("classpath:db/teardown.sql")
 @ActiveProfiles("test")
 @AutoConfigureMockMvc // 얘를 명시해줘야, `private MockMvc mvc;`를 autowired 할 수 있음
 @SpringBootTest(webEnvironment = WebEnvironment.MOCK) // 가짜 환경으로 Spring 에 있는 component 들을 스캔 할 수 있음.
