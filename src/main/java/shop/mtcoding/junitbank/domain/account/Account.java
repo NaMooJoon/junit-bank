@@ -60,7 +60,7 @@ public class Account {
     }
 
     public void checkOwner(Long userId) {
-        if (this.user.getId() != userId) {
+        if (this.user.getId() != userId) { // user.getId() 는 FK 이기 때문에 값을 가지고 있다, 조회를 해도 SELECT 쿼리가 날라가지 않는다 (LAZY)
             throw new CustomApiException("계좌 소유자가 아닙니다.");
         }
     }
