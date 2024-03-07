@@ -30,13 +30,25 @@ class JwtProcessTest {
     @Test
     void verify_test() {
         // given
-        String jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJiYW5rIiwiZXhwIjoxNzA5NzQyMjQ1LCJpZCI6MSwicm9sZSI6IkFETUlOIn0.xPTf3geYwHy4sG7hLmWtCJuFhoFN9h0_e9S0vpe0wPA";
+        String jwtToken = createToken();
+        String token = jwtToken.replace(JwtVO.TOKEN_PREFIX, "");
 
         // when
-        LoginUser loginUser = JwtProcess.verify(jwtToken);
+        LoginUser loginUser2 = JwtProcess.verify(token);
 
         // then
-        assertThat(loginUser.getUser().getId()).isEqualTo(1L);
-        assertThat(loginUser.getUser().getRole()).isEqualTo(UserEnum.ADMIN);
+        assertThat(loginUser2.getUser().getId()).isEqualTo(1L);
+        assertThat(loginUser2.getUser().getRole()).isEqualTo(UserEnum.ADMIN);
+    }
+
+    private String createToken() {
+        User user = User.builder()
+                .id(1L)
+                .role(UserEnum.ADMIN)
+                .build();
+        LoginUser loginUser = new LoginUser(user);
+
+        // when
+        return JwtProcess.create(loginUser);
     }
 }
