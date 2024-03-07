@@ -28,7 +28,9 @@ import shop.mtcoding.junitbank.domain.account.Account;
 import shop.mtcoding.junitbank.domain.account.AccountRepository;
 import shop.mtcoding.junitbank.domain.user.User;
 import shop.mtcoding.junitbank.domain.user.UserRepository;
+import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountDepositReqDto;
 import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountSaveReqDto;
+import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountWithdrawReqDto;
 import shop.mtcoding.junitbank.handler.ex.CustomApiException;
 
 @ActiveProfiles("test")
@@ -121,6 +123,51 @@ class AccountControllerTest extends DummyObject {
         assertThrows(CustomApiException.class, () -> accountRepository.findByNumber(number).orElseThrow(
                 () -> new CustomApiException("계좌를 찾을 수 없습니다")
         ));
+    }
+
+    @Test
+    void deposit_test() throws Exception {
+        // given
+        AccountDepositReqDto accountDepositReqDto = new AccountDepositReqDto();
+        accountDepositReqDto.setNumber(1111L);
+        accountDepositReqDto.setAmount(100L);
+        accountDepositReqDto.setGubun("DEPOSIT");
+        accountDepositReqDto.setTel("01012341234");
+
+        String requestBody = om.writeValueAsString(accountDepositReqDto);
+        System.out.println("requestBody = " + requestBody);
+
+        // when
+        ResultActions resultActions = mvc.perform(
+                post("/api/account/deposit").content(requestBody).contentType(MediaType.APPLICATION_JSON));
+        String responseBody = resultActions.andReturn().getResponse().getContentAsString();
+        System.out.println("responseBody = " + responseBody);
+
+        // then
+        resultActions.andExpect(status().isCreated());
+    }
+
+    @WithUserDetails(value = "ssar", setupBefore = TestExecutionEvent.TEST_EXECUTION)
+    @Test
+    void withdrawAccount_test() throws Exception {
+        // given
+        AccountWithdrawReqDto accountWithdrawReqDto = new AccountWithdrawReqDto();
+        accountWithdrawReqDto.setNumber(1111L);
+        accountWithdrawReqDto.setPassword(1234L);
+        accountWithdrawReqDto.setAmount(100L);
+        accountWithdrawReqDto.setGubun("WITHDRAW");
+
+        String requestBody = om.writeValueAsString(accountWithdrawReqDto);
+        System.out.println("requestBody = " + requestBody);
+
+        // when
+        ResultActions resultActions = mvc.perform(
+                post("/api/s/account/withdraw").content(requestBody).contentType(MediaType.APPLICATION_JSON));
+        String responseBody = resultActions.andReturn().getResponse().getContentAsString();
+        System.out.println("responseBody = " + responseBody);
+
+        // then
+        resultActions.andExpect(status().isCreated());
     }
 
     private void dataSetting() {

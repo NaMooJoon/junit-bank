@@ -115,4 +115,25 @@ public class RegexTest {
         assertThat(result).isEqualTo(false);
         assertThat(result2).isEqualTo(true);
     }
+
+    @Test
+    void account_gubun_test() {
+        String gubun = "DEPOSIT";
+        boolean result = Pattern.matches("^(DEPOSIT)$", gubun);
+        assertThat(result).isEqualTo(true);
+    }
+
+    @Test
+    void account_gubun_test2() {
+        String gubun = "TRANSFER";
+        boolean result = Pattern.matches("^(DEPOSIT|TRANSFER)$", gubun);
+        assertThat(result).isEqualTo(true);
+    }
+
+    @Test
+    void account_tel_test() {
+        String tel = "01033334444";
+        boolean result = Pattern.matches("^[0-9]{3}[0-9]{4}[0-9]{4}", tel);
+        assertThat(result).isEqualTo(true);
+    }
 }

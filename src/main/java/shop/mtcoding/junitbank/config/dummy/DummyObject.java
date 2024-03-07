@@ -3,6 +3,8 @@ package shop.mtcoding.junitbank.config.dummy;
 import java.time.LocalDateTime;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import shop.mtcoding.junitbank.domain.account.Account;
+import shop.mtcoding.junitbank.domain.transaction.Transaction;
+import shop.mtcoding.junitbank.domain.transaction.TransactionEnum;
 import shop.mtcoding.junitbank.domain.user.User;
 import shop.mtcoding.junitbank.domain.user.UserEnum;
 
@@ -54,4 +56,35 @@ public class DummyObject {
                 .updatedAt(LocalDateTime.now())
                 .build();
     }
+
+    protected Transaction newTransaction(Account withdrawAccount, Account depositAccount, Long amount, String gubun,
+                                         String sender, String receiver, String tel) {
+        return Transaction.builder()
+                .withdrawAccount(withdrawAccount)
+                .depositAccount(depositAccount)
+                .depositAccountBalance(depositAccount.getBalance())
+                .withdrawAccountBalance(null).amount(amount)
+                .gubun(TransactionEnum.DEPOSIT).sender(sender)
+                .receiver(receiver)
+                .tel(tel)
+                .build();
+    }
+
+    protected Transaction newMockDepositTransaction(Long id, Account account, Long amount) {
+        account.deposit(amount);
+        return Transaction.builder()
+                .id(id)
+                .withdrawAccount(null)
+                .withdrawAccountBalance(null)
+                .depositAccount(account)
+                .depositAccountBalance(account.getBalance())
+                .amount(100L).gubun(TransactionEnum.DEPOSIT)
+                .sender("ATM")
+                .receiver(account.getNumber() + "")
+                .tel("01012345678")
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
 }

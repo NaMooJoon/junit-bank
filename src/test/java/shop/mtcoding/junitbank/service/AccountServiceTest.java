@@ -17,12 +17,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import shop.mtcoding.junitbank.config.dummy.DummyObject;
 import shop.mtcoding.junitbank.domain.account.Account;
 import shop.mtcoding.junitbank.domain.account.AccountRepository;
+import shop.mtcoding.junitbank.domain.transaction.Transaction;
+import shop.mtcoding.junitbank.domain.transaction.TransactionRepository;
 import shop.mtcoding.junitbank.domain.user.User;
 import shop.mtcoding.junitbank.domain.user.UserRepository;
 import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountSaveReqDto;
+import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountDepositResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountSaveResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountListResDto;
 import shop.mtcoding.junitbank.handler.ex.CustomApiException;
+import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountDepositReqDto;
 
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest extends DummyObject {
@@ -33,6 +37,8 @@ class AccountServiceTest extends DummyObject {
     private UserRepository userRepository;
     @Mock
     private AccountRepository accountRepository;
+    @Mock
+    private TransactionRepository transactionRepository;
     @Spy
     private ObjectMapper om;
 
@@ -98,5 +104,56 @@ class AccountServiceTest extends DummyObject {
 
         // when
         assertThrows(CustomApiException.class, () -> accountService.계좌삭제(number, userId));
+    }
+
+    @Test
+    void 계좌입금_test() throws Exception {
+        // given
+        final Long amount = 100L;
+        AccountDepositReqDto accountDepositReqDto = new AccountDepositReqDto();
+        accountDepositReqDto.setNumber(1111L);
+        accountDepositReqDto.setAmount(amount);
+        accountDepositReqDto.setGubun("DEPOSIT");
+        accountDepositReqDto.setTel("01012341234");
+
+        // stub 1
+        User testUser = newMockUser(1L, "ssar", "쌀");
+        Account testAccount = newMockAccount(1L, 1111L, 1000L, testUser);
+        when(accountRepository.findByNumber(any())).thenReturn(Optional.of(testAccount));
+
+        // stub 2 ( stub 이 진행될 때 마다, 연관된 객체는 새로 만들어 주기 => Mock 특성상 타이밍 때문에 꼬일 수 있다)
+        Account testAccount2 = newMockAccount(1L, 1111L, 1000L, testUser);
+        Transaction testTransaction = newMockDepositTransaction(1L, testAccount2, amount);
+        when(transactionRepository.save(any())).thenReturn(testTransaction);
+
+        // when
+        AccountDepositResDto accountDepositResDto = accountService.계좌입금(accountDepositReqDto);
+        System.out.println("test amount : " + accountDepositResDto.getTransaction().getDepositAccountBalance());
+        System.out.println("test amount : " + testAccount.getBalance());
+
+        // then
+        assertThat(testAccount.getBalance()).isEqualTo(1100L);
+        assertThat(testTransaction.getDepositAccountBalance()).isEqualTo(1100L);
+    }
+
+    @Test
+    void 계좌출금_test() throws Exception {
+        // given
+        Long amount = 100L;
+        Long password = 1234L;
+        Long userId = 1L;
+
+        User ssar = newMockUser(1L, "ssar", "쌀");
+        Account account = newMockAccount(1L, 1111L, 1000L, ssar);
+        // when
+        if (amount <= 0L) { // 0원 체크
+            throw new CustomApiException("0원 이하의 금액을 입금할 수 없습니다");
+        }
+        account.checkOwner(userId);
+        account.checkSamePassword(password);
+        account.withdraw(amount);
+
+        // then
+        assertThat(account.getBalance()).isEqualTo(900L);
     }
 }
