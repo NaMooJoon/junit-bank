@@ -1,14 +1,8 @@
 package shop.mtcoding.junitbank.service;
 
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import java.util.List;
 import java.util.Optional;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import shop.mtcoding.junitbank.domain.account.Account;
@@ -20,9 +14,12 @@ import shop.mtcoding.junitbank.domain.user.User;
 import shop.mtcoding.junitbank.domain.user.UserRepository;
 import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountDepositReqDto;
 import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountSaveReqDto;
+import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountTransferReqDto;
+import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountWithdrawReqDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountDepositResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountListResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountSaveResDto;
+import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountTransferResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountWithdrawResDto;
 import shop.mtcoding.junitbank.handler.ex.CustomApiException;
 
@@ -134,21 +131,55 @@ public class AccountService {
         return new AccountWithdrawResDto(withdrawAccountPS, transactionPS);
     }
 
+    @Transactional
+    public AccountTransferResDto 계좌이체(AccountTransferReqDto accountTransferReqDto, Long userId) {
 
+        // 출금계좌 != 입금계좌
+        if (accountTransferReqDto.getWithdrawNumber().longValue() ==
+                accountTransferReqDto.getDepositNumber().longValue()) {
+            throw new CustomApiException("입출금 계좌는 동일할 수 없습니다.");
+        }
 
-    @Getter
-    @Setter
-    public static class AccountWithdrawReqDto {
-        @NotNull
-        @Digits(integer = 4, fraction = 4)
-        private Long number;
-        @NotNull
-        @Digits(integer = 4, fraction = 4)
-        private Long password;
-        @NotNull
-        private Long amount;
-        @NotEmpty
-        @Pattern(regexp = "^(WITHDRAW)$")
-        private String gubun;
+        // 0원 체크
+        if (accountTransferReqDto.getAmount() <= 0L) {
+            throw new CustomApiException("0원 이하의 금액을 입금할 수 없습니다");
+        }
+        // 출금 계좌 확인
+        Account withdrawAccountPS = accountRepository.findByNumber(accountTransferReqDto.getWithdrawNumber())
+                .orElseThrow(() -> new CustomApiException("출금 계좌를 찾을 수 없습니다."));
+
+        // 입금 계좌 확인
+        Account depositAccountPS = accountRepository.findByNumber(accountTransferReqDto.getDepositNumber())
+                .orElseThrow(() -> new CustomApiException("압굼 계좌를 찾을 수 없습니다."));
+
+        // 출금 소유자 확인 (로그인 한 사람과 동일한지)
+        withdrawAccountPS.checkOwner(userId);
+
+        // 비밀번호 확인
+        withdrawAccountPS.checkSamePassword(accountTransferReqDto.getWithdrawPassword());
+
+        // 계좌 잔액 확인
+        withdrawAccountPS.checkBalance(accountTransferReqDto.getAmount());
+
+        // 출금하기
+        withdrawAccountPS.withdraw(accountTransferReqDto.getAmount());
+        depositAccountPS.deposit(accountTransferReqDto.getAmount());
+
+        // 거래 내역 남기기 (내 계좌에서 ATM으로 출금)
+        Transaction transaction = Transaction.builder()
+                .withdrawAccount(withdrawAccountPS)
+                .withdrawAccountBalance(withdrawAccountPS.getBalance())
+                .depositAccount(depositAccountPS)
+                .depositAccountBalance(depositAccountPS.getBalance())
+                .amount(accountTransferReqDto.getAmount())
+                .gubun(TransactionEnum.TRANSFER)
+                .sender(accountTransferReqDto.getWithdrawNumber() + "")
+                .receiver(accountTransferReqDto.getDepositNumber() + "")
+                .build();
+
+        Transaction transactionPS = transactionRepository.save(transaction);
+
+        // DTO
+        return new AccountTransferResDto(withdrawAccountPS, transactionPS);
     }
 }

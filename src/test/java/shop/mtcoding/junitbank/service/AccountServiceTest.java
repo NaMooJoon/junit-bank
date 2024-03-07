@@ -22,6 +22,7 @@ import shop.mtcoding.junitbank.domain.transaction.TransactionRepository;
 import shop.mtcoding.junitbank.domain.user.User;
 import shop.mtcoding.junitbank.domain.user.UserRepository;
 import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountSaveReqDto;
+import shop.mtcoding.junitbank.dto.account.AccountReqDto.AccountTransferReqDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountDepositResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountSaveResDto;
 import shop.mtcoding.junitbank.dto.account.AccountResDto.AccountListResDto;
@@ -155,5 +156,48 @@ class AccountServiceTest extends DummyObject {
 
         // then
         assertThat(account.getBalance()).isEqualTo(900L);
+    }
+
+    @Test
+    void 계좌이체_test() throws Exception {
+        // given
+        AccountTransferReqDto accountTransferReqDto = new AccountTransferReqDto();
+        accountTransferReqDto.setWithdrawNumber(1111L);
+        accountTransferReqDto.setDepositNumber(2222L);
+        accountTransferReqDto.setWithdrawPassword(1234L);
+        accountTransferReqDto.setAmount(100L);
+        accountTransferReqDto.setGubun("TRANSFER");
+
+        User cos = newMockUser(1L, "cos", "코스");
+        User ssar = newMockUser(2L, "ssar", "쌀");
+        Account withdrawAccount = newMockAccount(1L, 11111L, 1000L, cos);
+        Account depositAccount = newMockAccount(2L, 2222L, 1000L, ssar);
+
+        // when
+        if (accountTransferReqDto.getWithdrawNumber().longValue() ==
+                accountTransferReqDto.getDepositNumber().longValue()) {
+            throw new CustomApiException("입출금 계좌는 동일할 수 없습니다.");
+        }
+
+        if (accountTransferReqDto.getAmount() <= 0L) {
+            throw new CustomApiException("0원 이하의 금액을 입금할 수 없습니다");
+        }
+
+        // 출금 소유자 확인 (로그인 한 사람과 동일한지)
+        withdrawAccount.checkOwner(1L);
+
+        // 비밀번호 확인
+        withdrawAccount.checkSamePassword(accountTransferReqDto.getWithdrawPassword());
+
+        // 계좌 잔액 확인
+        withdrawAccount.checkBalance(accountTransferReqDto.getAmount());
+
+        // 출금하기
+        withdrawAccount.withdraw(accountTransferReqDto.getAmount());
+        depositAccount.deposit(accountTransferReqDto.getAmount());
+
+        // then
+        assertThat(withdrawAccount.getBalance()).isEqualTo(900L);
+        assertThat(depositAccount.getBalance()).isEqualTo(1100L);
     }
 }
